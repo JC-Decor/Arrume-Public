@@ -1,0 +1,87 @@
+services:
+  # -------- DEV --------
+  - type: web
+    name: arrume-dev
+    runtime: docker
+    plan: starter
+    branch: main
+    rootDir: Arrume.Web
+    dockerfilePath: Dockerfile
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Development
+      # Faz o Kestrel bindar no endereço/porta que o Render injeta
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:$PORT
+      - key: DOTNET_CLI_TELEMETRY_OPTOUT
+        value: "1"
+
+      # --- Z-API (DEV): FAKE para não disparar WhatsApp real ---
+      - key: ZApi__UseFake
+        value: "true"
+
+      # --- SQLite persistente (DEV) ---
+      - key: ConnectionStrings__Sqlite
+        value: Data Source=/var/data/arrume.dev.db
+
+      # Categorias (não-sensíveis)
+      - key: AzureSql__CategoriaClienteIds__0
+        value: "02 - CAPOTEIRO"
+      - key: AzureSql__CategoriaClienteIds__1
+        value: "02 - ESTOFADOR"
+      - key: AzureSql__CategoriaClienteIds__2
+        value: "02 - ESTOFADOR E CAPOTEIRO"
+
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
+
+  # -------- PROD --------
+  - type: web
+    name: arrume-prod
+    runtime: docker
+    plan: starter
+    branch: main
+    rootDir: Arrume.Web
+    dockerfilePath: Dockerfile
+    healthCheckPath: /
+    autoDeploy: false   # aprove manualmente
+
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:$PORT
+      - key: DOTNET_CLI_TELEMETRY_OPTOUT
+        value: "1"
+
+      # --- Z-API (PROD) ---
+      - key: ZApi__UseFake
+        value: "false"
+      - key: ZApi__UrlBase
+        value: https://api.z-api.io
+
+      # Os seguintes serão pedidos no dashboard (não vão para o Git):
+      - key: ZApi__Instance
+        sync: false
+      - key: ZApi__Token
+        sync: false
+      - key: ZApi__ClientToken
+        sync: false
+      - key: ZApi__SenderPhone
+        sync: false
+
+      # --- SQL Azure (PROD) ---
+      - key: ConnectionStrings__AzureSql
+        sync: false
+
+      # Categorias (não-sensíveis)
+      - key: AzureSql__CategoriaClienteIds__0
+        value: "02 - CAPOTEIRO"
+      - key: AzureSql__CategoriaClienteIds__1
+        value: "02 - ESTOFADOR"
+      - key: AzureSql__CategoriaClienteIds__2
+        value: "02 - ESTOFADOR E CAPOTEIRO"

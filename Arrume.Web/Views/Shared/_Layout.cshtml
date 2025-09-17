@@ -1,0 +1,51 @@
+﻿@{
+    Layout = null;
+    var title = ViewData["Title"] as string ?? "ARRUME";
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title - ARRUME</title>
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="icon" href="~/favicon.ico" />
+</head>
+<body>
+    <header class="hdr">
+        <div class="container hdr__wrap">
+            <a href="/" class="brand" aria-label="Página inicial Arrume">
+                <img src="~/images/logo.jpg" alt="ARRUME" class="logo" />
+            </a>
+
+            <div class="brand-by">
+                <span class="by-text">Por</span>
+                <img src="~/images/jcdecor-logo.png" alt="JC Decor" class="jc-logo" />
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        @RenderBody()
+    </main>
+
+    <footer class="ftr">
+        <div class="container ftr__wrap">
+            <div class="ftr__brand">
+                <img src="~/images/jcdecor-logo.png" alt="JC Decor" class="jc-logo--footer" />
+                <p class="muted">Plataforma ARRUME por JC Decor</p>
+            </div>
+            <p class="muted">© @DateTime.Now.Year JC Decor • Todos os direitos reservados</p>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/localization/messages_pt_BR.min.js" crossorigin="anonymous"></script>
+
+    <script src="~/js/form-lead.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
