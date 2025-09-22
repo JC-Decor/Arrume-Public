@@ -4,13 +4,20 @@ services:
     env: docker
     plan: starter
     branch: main
+    autoDeploy: true              # DEV: cada push na main faz deploy
     dockerfilePath: ./Dockerfile
     dockerContext: .
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Development
-      - key: ASPNETCORE_URLS
-        value: http://0.0.0.0:$PORT
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: DevAuth__Enabled
+        value: "true"
+      - key: DevAuth__User
+        sync: false               # defina no painel como Secret
+      - key: DevAuth__Pass
+        sync: false               # defina no painel como Secret
       - key: ZApi__UseFake
         value: "false"
       - key: ZApi__UrlBase
@@ -33,13 +40,14 @@ services:
     env: docker
     plan: starter
     branch: main
+    autoDeploy: false             # PROD: deploy manual pra ter controle
     dockerfilePath: ./Dockerfile
     dockerContext: .
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      - key: ASPNETCORE_URLS
-        value: http://0.0.0.0:$PORT
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
       - key: ZApi__UseFake
         value: "false"
       - key: ZApi__UrlBase
@@ -58,3 +66,8 @@ services:
         value: "02 - ESTOFADOR"
       - key: AzureSql__CategoriaClienteIds__2
         value: "02 - ESTOFADOR E CAPOTEIRO"
+    # (Opcional) disco para DataProtection/arquivos persistentes:
+    # disk:
+    #   name: dataprotection
+    #   mountPath: /var/data
+    #   sizeGB: 1

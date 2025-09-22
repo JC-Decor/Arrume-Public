@@ -3,6 +3,7 @@ using Arrume.Web.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpLogging;
+using System.Text; // <- Basic Auth
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
@@ -71,12 +72,57 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+// 🔐 BASIC AUTH (ativa só se DevAuth:Enabled = true nas env vars do arrume-dev)
+bool devAuthEnabled = app.Configuration.GetValue<bool>("DevAuth:Enabled", false);
+string devUser = app.Configuration["DevAuth:User"] ?? "";
+string devPass = app.Configuration["DevAuth:Pass"] ?? "";
 
-app.UseHttpLogging(); // <- habilita o http logging
+if (devAuthEnabled)
+{
+    app.Use(async (ctx, next) =>
+    {
+        bool ok = false;
+
+        if (ctx.Request.Headers.TryGetValue("Authorization", out var auth) &&
+            auth.ToString().StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var b64 = auth.ToString().Substring("Basic ".Length).Trim();
+                var bytes = Convert.FromBase64String(b64);
+                var decoded = Encoding.UTF8.GetString(bytes);
+                var parts = decoded.Split(':', 2);
+                if (parts.Length == 2)
+                    ok = (parts[0] == devUser && parts[1] == devPass);
+            }
+            catch { /* ignore */ }
+        }
+
+        if (!ok)
+        {
+            ctx.Response.StatusCode = 401;
+            ctx.Response.Headers["WWW-Authenticate"] = "Basic realm=\"ARRUME-DEV\"";
+            ctx.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+            await ctx.Response.WriteAsync("Unauthorized");
+            return;
+        }
+
+        ctx.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+        await next();
+    });
+}
+
+// ✅ aceitar os headers do proxy da Render e parar os "Unknown proxy"
+var fwd = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 2
+};
+fwd.KnownNetworks.Clear();
+fwd.KnownProxies.Clear();
+app.UseForwardedHeaders(fwd);
+
+app.UseHttpLogging();
 
 if (!env.IsDevelopment())
 {
@@ -105,6 +151,13 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://localhost:5024";
-app.Logger.LogInformation("➡️ ARRUME rodando em {Url} (ENV={Env})", url, env.EnvironmentName);
-app.Run(url);
+// 🔌 bind na porta fornecida pelo Render (PORT). Não use ASPNETCORE_URLS com $PORT.
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    app.Urls.Add($"http://0.0.0.0:{port}");
+}
+app.Logger.LogInformation("➡️ ARRUME ouvindo na(s) URL(s): {Urls} (ENV={Env})",
+    string.Join(", ", app.Urls), env.EnvironmentName);
+
+app.Run();
