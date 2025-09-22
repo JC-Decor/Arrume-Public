@@ -12,21 +12,21 @@ services:
       - key: ASPNETCORE_ENVIRONMENT
         value: Development
       - key: ZApi__UseFake
-        value: "false"          # em DEV você escolhe usar real ou fake
+        value: "false"
       - key: ZApi__UrlBase
         value: https://api.z-api.io
       - key: ZApi__Instance
-        sync: false             # defina no dashboard do Render (Secret)
+        sync: false
       - key: ZApi__Token
-        sync: false             # Secret
+        sync: false
       - key: ZApi__ClientToken
-        sync: false             # Secret (se a instância exigir)
+        sync: false
       - key: ConnectionStrings__Sqlite
         value: Data Source=/var/data/arrume.dev.db
-    disks:
-      - name: sqlite-data
-        mountPath: /var/data
-        sizeGB: 1
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
 
   - type: web
     name: arrume-prod
