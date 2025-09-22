@@ -1,0 +1,60 @@
+services:
+  - type: web
+    name: arrume-dev
+    plan: starter
+    branch: main
+    buildCommand: |
+      dotnet restore Arrume.Web/Arrume.Web.csproj
+      dotnet publish Arrume.Web/Arrume.Web.csproj -c Release -o out
+    startCommand: |
+      cd out && ASPNETCORE_URLS=http://0.0.0.0:$PORT dotnet Arrume.Web.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Development
+      - key: ZApi__UseFake
+        value: "false"          # em DEV você escolhe usar real ou fake
+      - key: ZApi__UrlBase
+        value: https://api.z-api.io
+      - key: ZApi__Instance
+        sync: false             # defina no dashboard do Render (Secret)
+      - key: ZApi__Token
+        sync: false             # Secret
+      - key: ZApi__ClientToken
+        sync: false             # Secret (se a instância exigir)
+      - key: ConnectionStrings__Sqlite
+        value: Data Source=/var/data/arrume.dev.db
+    disks:
+      - name: sqlite-data
+        mountPath: /var/data
+        sizeGB: 1
+
+  - type: web
+    name: arrume-prod
+    plan: starter
+    branch: main
+    buildCommand: |
+      dotnet restore Arrume.Web/Arrume.Web.csproj
+      dotnet publish Arrume.Web/Arrume.Web.csproj -c Release -o out
+    startCommand: |
+      cd out && ASPNETCORE_URLS=http://0.0.0.0:$PORT dotnet Arrume.Web.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ZApi__UseFake
+        value: "false"
+      - key: ZApi__UrlBase
+        value: https://api.z-api.io
+      - key: ZApi__Instance
+        sync: false
+      - key: ZApi__Token
+        sync: false
+      - key: ZApi__ClientToken
+        sync: false
+      - key: ConnectionStrings__AzureSql
+        sync: false
+      - key: AzureSql__CategoriaClienteIds__0
+        value: "02 - CAPOTEIRO"
+      - key: AzureSql__CategoriaClienteIds__1
+        value: "02 - ESTOFADOR"
+      - key: AzureSql__CategoriaClienteIds__2
+        value: "02 - ESTOFADOR E CAPOTEIRO"
