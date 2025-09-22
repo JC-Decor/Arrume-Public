@@ -1,0 +1,155 @@
+﻿@model Arrume.Web.Models.Lead
+@{
+    ViewData["Title"] = "Início";
+    Layout = "_Layout";
+}
+
+<section class="hero">
+    <div class="container hero__grid">
+        <div class="hero__copy">
+            <span class="pill">Conecte-se rápido</span>
+            <h1 class="hero__title">Estofadores e capoteiros <br />perto de você</h1>
+            <p class="hero__subtitle">Receba no WhatsApp até <strong>3 opções</strong> confiáveis indicadas pela <strong>JC Decor</strong>.</p>
+            <ul class="hero__bullets">
+                <li>Atendimento por WhatsApp</li>
+                <li>Profissionais próximos ao seu CEP</li>
+                <li>Para reforma ou estofado novo</li>
+            </ul>
+        </div>
+
+        <div class="hero__media">
+            <div class="media-row">
+                <div class="media-card"><img src="~/images/sofa-hero-2.jpg" alt="Detalhe de costura do estofado" /></div>
+                <div class="media-card"><img src="~/images/sofa-hero-1.jpg" alt="Poltrona estofada" /></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="form-wrap">
+    <div class="container">
+        <div class="card form-card">
+            <h2 class="section-title">Receba contatos no WhatsApp</h2>
+            <p class="muted">Preencha os dados e receba <strong>3 opções</strong> de profissionais.</p>
+
+            <form asp-controller="Lead" asp-action="Submit" method="post" id="formLead" novalidate>
+                @Html.AntiForgeryToken()
+
+                <!-- consentimentos mapeados pela modal -->
+                <input type="hidden" name="AceiteContatoWhatsapp" id="AceiteContatoWhatsapp" value="false" />
+                <input type="hidden" name="AceiteCompartilhamento" id="AceiteCompartilhamento" value="false" />
+                <input type="hidden" name="AceiteUso" id="AceiteUso" value="false" />
+
+                <!-- telefone real (enviado) fica hidden; o usuário digita no TelefoneView -->
+                <input type="hidden" asp-for="Telefone" id="Telefone" />
+
+                <div class="form-grid">
+                    <div class="row">
+                        <label asp-for="Nome">Nome</label>
+                        <input asp-for="Nome" class="inp" placeholder="Seu nome completo" />
+                        <span asp-validation-for="Nome" class="val"></span>
+                    </div>
+
+                    <div class="row">
+                        <label for="TelefoneView">Telefone (WhatsApp)</label>
+                        <div class="inp phone-wrap">
+                            <span class="phone-prefix" aria-hidden="true">+55</span>
+                            <input id="TelefoneView" inputmode="numeric" pattern="[0-9]*" maxlength="11" class="phone-input"
+                                   placeholder="DDD + número (só dígitos)" autocomplete="tel-national" />
+                        </div>
+                        <small class="hint">Você digita apenas DDD + número; o +55 é automático.</small>
+                        <span data-valmsg-for="Telefone" class="val"></span>
+                    </div>
+
+                    <div class="row">
+                        <label asp-for="Email">Email</label>
+                        <input asp-for="Email" class="inp" placeholder="voce@exemplo.com" />
+                        <span asp-validation-for="Email" class="val"></span>
+                    </div>
+
+                    <div class="row">
+                        <label asp-for="Cep">CEP</label>
+                        <input asp-for="Cep" id="Cep" class="inp" maxlength="8" placeholder="01001000" />
+                        <small class="hint">Ao preencher, cidade/UF são inferidas automaticamente.</small>
+                        <span asp-validation-for="Cep" class="val"></span>
+                    </div>
+
+                    <!-- campos inferidos -->
+                    <input type="hidden" asp-for="Logradouro" id="Logradouro" />
+                    <input type="hidden" asp-for="Bairro" id="Bairro" />
+                    <input type="hidden" asp-for="Uf" id="Uf" />
+
+                    <div class="row">
+                        <label asp-for="Cidade">Cidade</label>
+                        <input asp-for="Cidade" id="Cidade" class="inp" readonly />
+                        <span asp-validation-for="Cidade" class="val"></span>
+                    </div>
+
+                    <div class="row">
+                        <label asp-for="Servico">Tipo de serviço</label>
+                        <select asp-for="Servico" class="inp">
+                            <option value="reforma">Reforma do meu Estofado</option>
+                            <option value="novo">Estofado Novo</option>
+                            <option value="ambos">Ambos</option>
+                        </select>
+                        <span asp-validation-for="Servico" class="val"></span>
+                    </div>
+                </div>
+
+                <button class="btn" id="btnSubmit" type="submit" disabled>Enviar pedido</button>
+            </form>
+        </div>
+
+        <div class="features">
+            <div class="feat">
+                <div class="feat__icon" aria-hidden="true">✔</div>
+                <div class="feat__text">
+                    <strong>Curadoria JC Decor</strong>
+                    <span class="muted">Rede de profissionais de confiança.</span>
+                </div>
+            </div>
+            <div class="feat">
+                <div class="feat__icon" aria-hidden="true">📍</div>
+                <div class="feat__text">
+                    <strong>Perto de você</strong>
+                    <span class="muted">Priorizamos CEP e bairro.</span>
+                </div>
+            </div>
+            <div class="feat">
+                <div class="feat__icon" aria-hidden="true">💬</div>
+                <div class="feat__text">
+                    <strong>WhatsApp direto</strong>
+                    <span class="muted">Contato simples e rápido.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MODAL DE TERMOS (aberta só ao clicar Enviar) -->
+<div id="termsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+    <div class="modal__backdrop"></div>
+    <div class="modal__panel" role="document">
+        <button type="button" class="modal__close" id="termsClose" aria-label="Fechar">×</button>
+
+        <div class="modal__header center">
+            <img src="~/images/jcdecor-logo.png" alt="JC Decor" class="modal__logo" />
+            <h3 id="termsTitle" class="modal__title">Termo de Uso</h3>
+            <p class="muted">Para enviar o pedido é necessário concordar com os termos de uso abaixo.</p>
+        </div>
+
+        <div class="modal__body">
+            <div class="terms-box" tabindex="0" aria-label="Texto do termo de uso">
+                <p>Ao prosseguir, você autoriza contato via WhatsApp sobre este pedido, o compartilhamento
+                   dos seus dados com os profissionais indicados e o uso das informações para coordenação do serviço.</p>
+                <p>Leia atentamente e, se estiver de acordo, clique em “Concordo” para continuar.</p>
+            </div>
+            <div id="termsFeedback" class="terms-feedback" aria-live="polite"></div>
+        </div>
+
+        <div class="modal__footer">
+            <button type="button" class="btn secondary" id="btnRecusar">Recusar</button>
+            <button type="button" class="btn success" id="btnConcordo">Concordo</button>
+        </div>
+    </div>
+</div>
