@@ -126,7 +126,7 @@ SELECT TOP (@limit)
     cidade_cliente AS Cidade,
     bairro_cliente AS Bairro,
     cep_cliente AS Cep
-FROM dbo.CLIENTES WITH (NOLOCK)
+FROM dbo.VW_ARRUME_PROFISSIONAIS WITH (NOLOCK)
 WHERE
     ({string.Join(" OR ", catConds)})
     AND ({whereExtra})
