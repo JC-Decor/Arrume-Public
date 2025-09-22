@@ -69,7 +69,7 @@ public class ZApiService : IZApiService
     }
 
     private static string FriendlyServicoLabel(string serv)
-{
+    {
     if (string.IsNullOrWhiteSpace(serv)) return "Não informado";
     serv = serv.Trim().ToLowerInvariant();
     return serv switch
@@ -79,7 +79,7 @@ public class ZApiService : IZApiService
         "ambos"   => "Reforma do meu Estofado e Estofado Novo",
         _         => serv
     };
-}
+   }
 
 
     private async Task EnviarWhatsAppAsync(string telefone, string mensagem, string destino)
