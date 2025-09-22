@@ -1,17 +1,16 @@
 services:
   - type: web
     name: arrume-dev
-    env: dotnet
+    env: docker
     plan: starter
     branch: main
-    buildCommand: |
-      dotnet restore Arrume.Web/Arrume.Web.csproj
-      dotnet publish Arrume.Web/Arrume.Web.csproj -c Release -o out
-    startCommand: |
-      cd out && ASPNETCORE_URLS=http://0.0.0.0:$PORT dotnet Arrume.Web.dll
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Development
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:$PORT
       - key: ZApi__UseFake
         value: "false"
       - key: ZApi__UrlBase
@@ -31,17 +30,16 @@ services:
 
   - type: web
     name: arrume-prod
-    env: dotnet
+    env: docker
     plan: starter
     branch: main
-    buildCommand: |
-      dotnet restore Arrume.Web/Arrume.Web.csproj
-      dotnet publish Arrume.Web/Arrume.Web.csproj -c Release -o out
-    startCommand: |
-      cd out && ASPNETCORE_URLS=http://0.0.0.0:$PORT dotnet Arrume.Web.dll
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:$PORT
       - key: ZApi__UseFake
         value: "false"
       - key: ZApi__UrlBase
