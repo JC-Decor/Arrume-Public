@@ -1,6 +1,7 @@
 services:
   - type: web
     name: arrume-dev
+    runtime: dotnet
     plan: starter
     branch: main
     buildCommand: |
@@ -30,6 +31,7 @@ services:
 
   - type: web
     name: arrume-prod
+    runtime: dotnet
     plan: starter
     branch: main
     buildCommand: |
