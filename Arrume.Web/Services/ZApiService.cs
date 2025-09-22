@@ -69,17 +69,18 @@ public class ZApiService : IZApiService
     }
 
     private static string FriendlyServicoLabel(string serv)
+{
+    if (string.IsNullOrWhiteSpace(serv)) return "Não informado";
+    serv = serv.Trim().ToLowerInvariant();
+    return serv switch
     {
-        if (string.IsNullOrWhiteSpace(serv)) return "Não informado";
-        serv = serv.Trim().ToLowerInvariant();
-        return serv switch
-        {
-            "reforma" => "Reforma do meu Estofado",
-            "novo"    => "Estofado Novo",
-            "ambos"   => "Ambos / Não especificado",
-            _         => serv
-        };
-    }
+        "reforma" => "Reforma do meu Estofado",
+        "novo"    => "Estofado Novo",
+        "ambos"   => "Reforma do meu Estofado e Estofado Novo",
+        _         => serv
+    };
+}
+
 
     private async Task EnviarWhatsAppAsync(string telefone, string mensagem, string destino)
     {
