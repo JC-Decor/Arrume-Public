@@ -3,7 +3,7 @@ using Arrume.Web.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpLogging;
-using System.Text; // <- Basic Auth
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
@@ -11,7 +11,6 @@ var env = builder.Environment;
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-// (Opcional) logging de requests/responses simplificado
 builder.Services.AddHttpLogging(o =>
 {
     o.LoggingFields = HttpLoggingFields.RequestMethod |
@@ -24,6 +23,8 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.Configure<ZApiOptions>(builder.Configuration.GetSection("ZApi"));
 var zapi = builder.Configuration.GetSection("ZApi").Get<ZApiOptions>() ?? new();
+
+builder.Services.AddHttpClient<ILinkShortenerService, TinyUrlService>();
 
 if (zapi.UseFake)
 {
@@ -55,7 +56,6 @@ else
 
 var app = builder.Build();
 
-// Security headers (CSP atualizada)
 app.Use(async (ctx, next) =>
 {
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -67,12 +67,11 @@ app.Use(async (ctx, next) =>
     "img-src 'self' data: https:; " +
     "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com; " +
     "style-src 'self' 'unsafe-inline'; " +
-    "connect-src 'self' https://viacep.com.br https://viacep.com; " +
+    "connect-src 'self' https://viacep.com.br https://viacep.com https://api.tinyurl.com https://is.gd; " +
     "frame-ancestors 'none';";
     await next();
 });
 
-// 🔐 BASIC AUTH (ativa só se DevAuth:Enabled = true nas env vars do arrume-dev)
 bool devAuthEnabled = app.Configuration.GetValue<bool>("DevAuth:Enabled", false);
 string devUser = app.Configuration["DevAuth:User"] ?? "";
 string devPass = app.Configuration["DevAuth:Pass"] ?? "";
@@ -112,7 +111,6 @@ if (devAuthEnabled)
     });
 }
 
-// ✅ aceitar os headers do proxy da Render e parar os "Unknown proxy"
 var fwd = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
@@ -141,8 +139,10 @@ app.MapControllerRoute(
 using (var scope = app.Services.CreateScope())
 {
     var prov = scope.ServiceProvider.GetRequiredService<ICapoteiroProvider>();
-    app.Logger.LogInformation("ENV={Env} | ZAPI={Mode} | Provider={Provider}",
-        env.EnvironmentName, zapi.UseFake ? "FAKE" : "REAL", prov.GetType().Name);
+    var shortener = scope.ServiceProvider.GetRequiredService<ILinkShortenerService>();
+    
+    app.Logger.LogInformation("ENV={Env} | ZAPI={Mode} | Provider={Provider} | Shortener={Shortener}",
+        env.EnvironmentName, zapi.UseFake ? "FAKE" : "REAL", prov.GetType().Name, shortener.GetType().Name);
 
     if (env.IsDevelopment())
     {
@@ -151,7 +151,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 🔌 bind na porta fornecida pelo Render (PORT). Não use ASPNETCORE_URLS com $PORT.
 var port = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrEmpty(port))
 {
