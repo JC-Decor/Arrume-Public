@@ -39,36 +39,36 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
     {
         var sql = BuildBaseSql(whereExtra:
 @"
-    -- Filtro por CEP e/ou cidade
+    -- Filtro por CEP e/ou cidade (no CLIENTES)
     (
-        REPLACE(REPLACE(ISNULL(cep_cliente,''),'-',''),' ','') = @cep
-        OR LEFT(REPLACE(REPLACE(ISNULL(cep_cliente,''),'-',''),' ','') , 5) = @cep5
-        OR (UPPER(LTRIM(RTRIM(ISNULL(cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
+        REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') = @cep
+        OR LEFT(REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') , 5) = @cep5
+        OR (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
             = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
     )
 ",
         orderBy:
 @"
-    -- Ordena pela maior proximidade: CEP exato -> prefixo(5) -> prefixo(4) -> mesma cidade+bairro (exato) -> mesma cidade+bairro (soundex) -> mesma cidade -> demais
+    -- Ordena pela maior proximidade sobre CLIENTES
     CASE
-        WHEN REPLACE(REPLACE(ISNULL(cep_cliente,''),'-',''),' ','') = @cep THEN 0
-        WHEN LEFT(REPLACE(REPLACE(ISNULL(cep_cliente,''),'-',''),' ','') , 5) = @cep5 THEN 1
-        WHEN LEFT(REPLACE(REPLACE(ISNULL(cep_cliente,''),'-',''),' ','') , 4) = @cep4 THEN 2
-        WHEN (UPPER(LTRIM(RTRIM(ISNULL(cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
+        WHEN REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') = @cep THEN 0
+        WHEN LEFT(REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') , 5) = @cep5 THEN 1
+        WHEN LEFT(REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') , 4) = @cep4 THEN 2
+        WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
-         AND (UPPER(LTRIM(RTRIM(ISNULL(bairro_cliente,'')))) COLLATE Latin1_General_CI_AI
+         AND (UPPER(LTRIM(RTRIM(ISNULL(c.bairro_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@bairro))) COLLATE Latin1_General_CI_AI) THEN 3
-        WHEN (UPPER(LTRIM(RTRIM(ISNULL(cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
+        WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
-         AND SOUNDEX(LTRIM(RTRIM(ISNULL(bairro_cliente,''))))
+         AND SOUNDEX(LTRIM(RTRIM(ISNULL(c.bairro_cliente,''))))
               = SOUNDEX(LTRIM(RTRIM(@bairro))) THEN 4
-        WHEN (UPPER(LTRIM(RTRIM(ISNULL(cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
+        WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI) THEN 5
         ELSE 9
     END ASC,
     -- Preferir quem tem celular
-    CASE WHEN NULLIF(REPLACE(REPLACE(celular_cliente,'-',''),' ',''),'') IS NULL THEN 1 ELSE 0 END ASC,
-    id_cliente ASC
+    CASE WHEN NULLIF(REPLACE(REPLACE(c.celular_cliente,'-',''),' ',''),'') IS NULL THEN 1 ELSE 0 END ASC,
+    c.id_cliente ASC
 ");
 
         var pars = BuildBaseParams(limit);
@@ -85,21 +85,21 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
     {
         var sql = BuildBaseSql(whereExtra:
 @"
-    -- Mesma cidade (case/acento-insensitive) e opcionalmente o mesmo bairro
-    (UPPER(LTRIM(RTRIM(ISNULL(cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
+    -- Mesma cidade (case/acento-insensitive) e opcionalmente o mesmo bairro (CLIENTES)
+    (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
         = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
 ",
         orderBy:
 @"
     CASE
-        WHEN (UPPER(LTRIM(RTRIM(ISNULL(bairro_cliente,'')))) COLLATE Latin1_General_CI_AI
+        WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.bairro_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@bairro))) COLLATE Latin1_General_CI_AI) THEN 0
-        WHEN SOUNDEX(LTRIM(RTRIM(ISNULL(bairro_cliente,''))))
+        WHEN SOUNDEX(LTRIM(RTRIM(ISNULL(c.bairro_cliente,''))))
               = SOUNDEX(LTRIM(RTRIM(@bairro))) THEN 1
         ELSE 2
     END ASC,
-    CASE WHEN NULLIF(REPLACE(REPLACE(celular_cliente,'-',''),' ',''),'') IS NULL THEN 1 ELSE 0 END ASC,
-    id_cliente ASC
+    CASE WHEN NULLIF(REPLACE(REPLACE(c.celular_cliente,'-',''),' ',''),'') IS NULL THEN 1 ELSE 0 END ASC,
+    c.id_cliente ASC
 ");
 
         var pars = BuildBaseParams(limit);
@@ -114,19 +114,21 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
         var catConds = new List<string>();
         for (int i = 0; i < _categoriasNorm.Length; i++)
         {
-            catConds.Add($"(REPLACE(REPLACE(UPPER(ISNULL(categoria_cliente,'')),' ',''),'-','') LIKE '%' + @cat{i} + '%')");
+            catConds.Add($"(REPLACE(REPLACE(UPPER(ISNULL(c.categoria_cliente,'')),' ',''),'-','') LIKE '%' + @cat{i} + '%')");
         }
 
         var sql = $@"
 SELECT TOP (@limit)
-    id_cliente AS Id,
-    razao_cliente AS Nome,
-    celular_cliente AS Celular,
-    fone_cliente AS Fone,
-    cidade_cliente AS Cidade,
-    bairro_cliente AS Bairro,
-    cep_cliente AS Cep
-FROM dbo.VW_ARRUME_PROFISSIONAIS WITH (NOLOCK)
+    c.id_cliente           AS Id,
+    c.razao_cliente        AS Nome,
+    c.celular_cliente      AS Celular,
+    c.fone_cliente         AS Fone,
+    c.cidade_cliente       AS Cidade,
+    c.bairro_cliente       AS Bairro,
+    c.cep_cliente          AS Cep
+FROM dbo.CLIENTES AS c WITH (NOLOCK)
+INNER JOIN dbo.VW_ARRUME_PROFISSIONAIS AS v WITH (NOLOCK)
+        ON v.id_cliente = c.id_cliente
 WHERE
     ({string.Join(" OR ", catConds)})
     AND ({whereExtra})
@@ -177,13 +179,12 @@ ORDER BY
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Erro ao consultar CLIENTES");
+            _logger.LogWarning(ex, "Erro ao consultar CLIENTES/VW_ARRUME_PROFISSIONAIS");
         }
         return lista;
     }
 
     private static string DigitsOnly(string s) => new string((s ?? "").Where(char.IsDigit).ToArray());
-
     private static string NormalizeCat(string? s)
         => (s ?? "").ToUpperInvariant().Replace(" ", "").Replace("-", "");
 }
