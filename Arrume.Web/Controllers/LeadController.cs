@@ -97,27 +97,29 @@ public class LeadController : Controller
 
         var categorias = _cfg.GetSection("AzureSql:CategoriaClienteIds").Get<string[]>() ?? Array.Empty<string>();
 
-        _logger.LogInformation("Buscando fornecedores: Cidade={Cidade}, UF={Uf}, CEP={Cep}, Limite={Limite}",
-            lead.Cidade, lead.Uf, lead.Cep, _limit);
+        _logger.LogInformation("Buscando fornecedores: Cidade={Cidade}, UF={Uf}, CEP={Cep}, Bairro={Bairro}, Limite={Limite}",
+            lead.Cidade, lead.Uf, lead.Cep, lead.Bairro, _limit);
 
         List<Capoteiro> forns = new();
         try
         {
             if (!string.IsNullOrWhiteSpace(lead.Cep) && lead.Cep.Length == 8)
             {
-                // OBS: método do provider com UF
-                forns = await _capoteiro.BuscarAsync(lead.Cidade, lead.Cep, lead.Uf, _limit, categorias);
+                // CEP + UF + BAIRRO do lead para tie-break
+                forns = await _capoteiro.BuscarAsync(lead.Cidade, lead.Cep, lead.Uf, lead.Bairro, _limit, categorias);
             }
 
             if ((forns == null || forns.Count == 0))
             {
-                var bairro = lead.Bairro ?? string.Empty;
-                forns = await _capoteiro.BuscarAsync(lead.Cidade, bairro, lead.Uf, _limit, categorias);
+                var bairroBusca = lead.Bairro ?? string.Empty;
+                // Bairro (2º arg) + UF + mesmo bairro (3º arg) como bairroLead
+                forns = await _capoteiro.BuscarAsync(lead.Cidade, bairroBusca, lead.Uf, bairroBusca, _limit, categorias);
             }
 
             if ((forns == null || forns.Count == 0))
             {
-                forns = await _capoteiro.BuscarAsync(lead.Cidade, string.Empty, lead.Uf, _limit, categorias);
+                // Sem filtro de bairro/cep
+                forns = await _capoteiro.BuscarAsync(lead.Cidade, string.Empty, lead.Uf, lead.Bairro ?? string.Empty, _limit, categorias);
             }
 
             _logger.LogInformation("Fornecedores encontrados: {Qtde}", forns?.Count ?? 0);
@@ -145,6 +147,7 @@ public class LeadController : Controller
         return RedirectToAction("Obrigado", "Home");
     }
 
+    // ==== helpers (1x cada) ====
 
     private void ReadAndApplyCheckbox(string key, Action<bool> apply)
     {

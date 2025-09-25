@@ -14,12 +14,15 @@ public class CapoteiroProviderDevColleagues : ICapoteiroProvider
         _env = env;
     }
 
-    public Task<List<Capoteiro>> BuscarAsync(string cidade, string bairroOuCep, string uf, int limite, IEnumerable<string> _categorias)
+    public Task<List<Capoteiro>> BuscarAsync(string cidade, string bairroOuCep, string uf, string bairroLead, int limite, IEnumerable<string> _categorias)
     {
         if (!_env.IsDevelopment())
             return Task.FromResult(new List<Capoteiro>());
 
         var colleagues = _cfg.GetSection("Dev:Colleagues").Get<List<Colleague>>() ?? new();
+
+        // Exibe o bairro do lead quando existir; senão, o que veio em bairroOuCep
+        var bairroToShow = string.IsNullOrWhiteSpace(bairroLead) ? (bairroOuCep ?? "") : bairroLead;
 
         var lista = colleagues
             .Select((c, i) => new Capoteiro
@@ -28,7 +31,7 @@ public class CapoteiroProviderDevColleagues : ICapoteiroProvider
                 Nome     = (c.nome ?? $"Colega {i + 1}").Trim(),
                 Telefone = DigitsOnly(c.telefone),
                 Cidade   = (cidade ?? "").Trim(),
-                Bairro   = (bairroOuCep ?? "").Trim()
+                Bairro   = bairroToShow.Trim()
             })
             .Where(t => !string.IsNullOrWhiteSpace(t.Telefone))
             .Take(Math.Max(1, limite))

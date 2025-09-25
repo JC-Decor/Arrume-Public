@@ -6,8 +6,9 @@ public interface ICapoteiroProvider
 {
     Task<List<Capoteiro>> BuscarAsync(
         string cidade,
-        string bairroOuCep,
-        string uf,              
+        string bairroOuCep,   
+        string uf,            
+        string bairroLead,    
         int limite,
         IEnumerable<string> categorias);
 }
