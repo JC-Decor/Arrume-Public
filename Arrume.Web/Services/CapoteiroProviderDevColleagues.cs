@@ -14,7 +14,7 @@ public class CapoteiroProviderDevColleagues : ICapoteiroProvider
         _env = env;
     }
 
-    public Task<List<Capoteiro>> BuscarAsync(string cidade, string bairroOuCep, int limite, IEnumerable<string> _categorias)
+    public Task<List<Capoteiro>> BuscarAsync(string cidade, string bairroOuCep, string uf, int limite, IEnumerable<string> _categorias)
     {
         if (!_env.IsDevelopment())
             return Task.FromResult(new List<Capoteiro>());
@@ -24,11 +24,11 @@ public class CapoteiroProviderDevColleagues : ICapoteiroProvider
         var lista = colleagues
             .Select((c, i) => new Capoteiro
             {
-                Id = 9000 + i,
-                Nome = (c.nome ?? $"Colega {i + 1}").Trim(),
+                Id       = 9000 + i,
+                Nome     = (c.nome ?? $"Colega {i + 1}").Trim(),
                 Telefone = DigitsOnly(c.telefone),
-                Cidade = (cidade ?? "").Trim(),
-                Bairro = (bairroOuCep ?? "").Trim()
+                Cidade   = (cidade ?? "").Trim(),
+                Bairro   = (bairroOuCep ?? "").Trim()
             })
             .Where(t => !string.IsNullOrWhiteSpace(t.Telefone))
             .Take(Math.Max(1, limite))

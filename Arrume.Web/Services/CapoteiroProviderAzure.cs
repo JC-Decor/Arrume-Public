@@ -21,13 +21,14 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
         _categoriasNorm = cats.Select(NormalizeCat).ToArray();
     }
 
-    public async Task<List<Capoteiro>> BuscarAsync(string cidade, string bairroOuCep, int limite, IEnumerable<string> _)
+    public async Task<List<Capoteiro>> BuscarAsync(string cidade, string bairroOuCep, string uf, int limite, IEnumerable<string> _)
     {
         var cep = DigitsOnly(bairroOuCep);
         var isCep = cep.Length == 8;
+
         var lista = isCep
-            ? await BuscarPorCepAsync(cidade ?? "", cep, limite)
-            : await BuscarPorCidadeBairroAsync(cidade ?? "", bairroOuCep ?? "", limite);
+            ? await BuscarPorCepAsync(cidade ?? "", uf ?? "", cep, limite)
+            : await BuscarPorCidadeBairroAsync(cidade ?? "", uf ?? "", bairroOuCep ?? "", limite);
 
         return lista
             .Where(t => !string.IsNullOrWhiteSpace(t.Telefone))
@@ -35,61 +36,80 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
             .ToList();
     }
 
-    private async Task<List<Capoteiro>> BuscarPorCepAsync(string cidade, string cep, int limit)
+    private async Task<List<Capoteiro>> BuscarPorCepAsync(string cidade, string uf, string cep, int limit)
     {
-        var sql = BuildBaseSql(whereExtra:
+        var sql = BuildBaseSql(
+            whereExtra:
 @"
-    -- Filtro por CEP e/ou cidade (no CLIENTES)
-    (
-        REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') = @cep
-        OR LEFT(REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') , 5) = @cep5
-        OR (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
-            = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
-    )
+    -- Não restringe por cidade; todos da VIEW concorrem
+    1 = 1
 ",
-        orderBy:
+            orderBy:
 @"
-    -- Ordena pela maior proximidade sobre CLIENTES
+    -- Ranqueamento de proximidade (CLIENTES)
     CASE
         WHEN REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') = @cep THEN 0
         WHEN LEFT(REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') , 5) = @cep5 THEN 1
         WHEN LEFT(REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ','') , 4) = @cep4 THEN 2
+
         WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
          AND (UPPER(LTRIM(RTRIM(ISNULL(c.bairro_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@bairro))) COLLATE Latin1_General_CI_AI) THEN 3
+
         WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
          AND SOUNDEX(LTRIM(RTRIM(ISNULL(c.bairro_cliente,''))))
               = SOUNDEX(LTRIM(RTRIM(@bairro))) THEN 4
+
         WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
               = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI) THEN 5
+
+        -- Preferir mesma UF do lead (se informada)
+        WHEN (NULLIF(@uf,'') IS NOT NULL
+              AND UPPER(LTRIM(RTRIM(ISNULL(c.uf_cliente,''))))
+                  = UPPER(LTRIM(RTRIM(@uf)))) THEN 6
         ELSE 9
     END ASC,
+
+    -- Heurística fina por diferença do prefixo numérico do CEP (regionalidade)
+    ABS(TRY_CAST(LEFT(REPLACE(REPLACE(ISNULL(c.cep_cliente,''),'-',''),' ',''),5) AS INT) - @cep5int) ASC,
+
     -- Preferir quem tem celular
     CASE WHEN NULLIF(REPLACE(REPLACE(c.celular_cliente,'-',''),' ',''),'') IS NULL THEN 1 ELSE 0 END ASC,
+
     c.id_cliente ASC
 ");
 
         var pars = BuildBaseParams(limit);
+
+        var cep5 = (cep.Length >= 5 ? cep[..5] : cep);
+        var cep4 = (cep.Length >= 4 ? cep[..4] : cep);
+
         pars.Add(new SqlParameter("@cep", SqlDbType.NVarChar, 20) { Value = cep });
-        pars.Add(new SqlParameter("@cep5", SqlDbType.NVarChar, 20) { Value = cep.Length >= 5 ? cep[..5] : cep });
-        pars.Add(new SqlParameter("@cep4", SqlDbType.NVarChar, 20) { Value = cep.Length >= 4 ? cep[..4] : cep });
+        pars.Add(new SqlParameter("@cep5", SqlDbType.NVarChar, 20) { Value = cep5 });
+        pars.Add(new SqlParameter("@cep4", SqlDbType.NVarChar, 20) { Value = cep4 });
         pars.Add(new SqlParameter("@cidade", SqlDbType.NVarChar, 200) { Value = cidade });
         pars.Add(new SqlParameter("@bairro", SqlDbType.NVarChar, 200) { Value = "" });
+        pars.Add(new SqlParameter("@uf", SqlDbType.NVarChar, 10) { Value = uf ?? "" });
+
+        int cep5int;
+        _ = int.TryParse(new string((cep5 ?? "").Where(char.IsDigit).ToArray()), out cep5int);
+        pars.Add(new SqlParameter("@cep5int", SqlDbType.Int) { Value = cep5int });
 
         return await ExecutarAsync(sql, pars);
     }
 
-    private async Task<List<Capoteiro>> BuscarPorCidadeBairroAsync(string cidade, string bairro, int limit)
+    private async Task<List<Capoteiro>> BuscarPorCidadeBairroAsync(string cidade, string uf, string bairro, int limit)
     {
-        var sql = BuildBaseSql(whereExtra:
+        var sql = BuildBaseSql(
+            whereExtra:
 @"
-    -- Mesma cidade (case/acento-insensitive) e opcionalmente o mesmo bairro (CLIENTES)
+    -- Mesma cidade (case/acento-insensitive) e opcionalmente o mesmo bairro
     (UPPER(LTRIM(RTRIM(ISNULL(c.cidade_cliente,'')))) COLLATE Latin1_General_CI_AI
         = UPPER(LTRIM(RTRIM(@cidade))) COLLATE Latin1_General_CI_AI)
 ",
-        orderBy:
+            orderBy:
 @"
     CASE
         WHEN (UPPER(LTRIM(RTRIM(ISNULL(c.bairro_cliente,'')))) COLLATE Latin1_General_CI_AI
@@ -98,6 +118,10 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
               = SOUNDEX(LTRIM(RTRIM(@bairro))) THEN 1
         ELSE 2
     END ASC,
+    -- (opcional) desempate por mesma UF se informada
+    CASE WHEN NULLIF(@uf,'') IS NOT NULL
+          AND UPPER(LTRIM(RTRIM(ISNULL(c.uf_cliente,'')))) = UPPER(LTRIM(RTRIM(@uf)))
+         THEN 0 ELSE 1 END ASC,
     CASE WHEN NULLIF(REPLACE(REPLACE(c.celular_cliente,'-',''),' ',''),'') IS NULL THEN 1 ELSE 0 END ASC,
     c.id_cliente ASC
 ");
@@ -105,6 +129,7 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
         var pars = BuildBaseParams(limit);
         pars.Add(new SqlParameter("@cidade", SqlDbType.NVarChar, 200) { Value = cidade });
         pars.Add(new SqlParameter("@bairro", SqlDbType.NVarChar, 200) { Value = bairro ?? "" });
+        pars.Add(new SqlParameter("@uf", SqlDbType.NVarChar, 10) { Value = uf ?? "" });
 
         return await ExecutarAsync(sql, pars);
     }
@@ -113,19 +138,17 @@ public class CapoteiroProviderAzure : ICapoteiroProvider
     {
         var catConds = new List<string>();
         for (int i = 0; i < _categoriasNorm.Length; i++)
-        {
             catConds.Add($"(REPLACE(REPLACE(UPPER(ISNULL(c.categoria_cliente,'')),' ',''),'-','') LIKE '%' + @cat{i} + '%')");
-        }
 
         var sql = $@"
-SELECT TOP (@limit)
-    c.id_cliente           AS Id,
-    c.razao_cliente        AS Nome,
-    c.celular_cliente      AS Celular,
-    c.fone_cliente         AS Fone,
-    c.cidade_cliente       AS Cidade,
-    c.bairro_cliente       AS Bairro,
-    c.cep_cliente          AS Cep
+SELECT TOP (@limitFetch)   -- overfetch para garantir TOP 3 com telefone
+    c.id_cliente      AS Id,
+    c.razao_cliente   AS Nome,
+    c.celular_cliente AS Celular,
+    c.fone_cliente    AS Fone,
+    c.cidade_cliente  AS Cidade,
+    c.bairro_cliente  AS Bairro,
+    c.cep_cliente     AS Cep
 FROM dbo.CLIENTES AS c WITH (NOLOCK)
 INNER JOIN dbo.VW_ARRUME_PROFISSIONAIS AS v WITH (NOLOCK)
         ON v.id_cliente = c.id_cliente
@@ -143,7 +166,11 @@ ORDER BY
         var pars = new List<SqlParameter>();
         for (int i = 0; i < _categoriasNorm.Length; i++)
             pars.Add(new SqlParameter($"@cat{i}", SqlDbType.NVarChar, 200) { Value = _categoriasNorm[i] });
+
+
+        var limitFetch = Math.Max(limit * 8, limit + 10);
         pars.Add(new SqlParameter("@limit", SqlDbType.Int) { Value = limit });
+        pars.Add(new SqlParameter("@limitFetch", SqlDbType.Int) { Value = limitFetch });
         return pars;
     }
 
@@ -160,20 +187,21 @@ ORDER BY
 
             while (await rd.ReadAsync())
             {
-                var cel = DigitsOnly(rd["Celular"] as string ?? "");
+                var cel  = DigitsOnly(rd["Celular"] as string ?? "");
                 var fone = DigitsOnly(rd["Fone"] as string ?? "");
-                var tel = !string.IsNullOrWhiteSpace(cel) ? cel : fone;
+                var tel  = !string.IsNullOrWhiteSpace(cel) ? cel : fone;
+
                 if (!string.IsNullOrWhiteSpace(tel) && !tel.StartsWith("55") && (tel.Length is 10 or 11))
                     tel = "55" + tel;
 
                 lista.Add(new Capoteiro
                 {
-                    Id = Convert.ToInt32(rd["Id"]),
-                    Nome = rd["Nome"] as string ?? "",
+                    Id       = Convert.ToInt32(rd["Id"]),
+                    Nome     = rd["Nome"] as string ?? "",
                     Telefone = tel,
-                    Cidade = rd["Cidade"] as string ?? "",
-                    Bairro = rd["Bairro"] as string ?? "",
-                    Cep = rd["Cep"] as string ?? ""
+                    Cidade   = rd["Cidade"] as string ?? "",
+                    Bairro   = rd["Bairro"] as string ?? "",
+                    Cep      = rd["Cep"] as string ?? ""
                 });
             }
         }
@@ -184,7 +212,9 @@ ORDER BY
         return lista;
     }
 
-    private static string DigitsOnly(string s) => new string((s ?? "").Where(char.IsDigit).ToArray());
-    private static string NormalizeCat(string? s)
-        => (s ?? "").ToUpperInvariant().Replace(" ", "").Replace("-", "");
+    private static string DigitsOnly(string s) =>
+        new string((s ?? "").Where(char.IsDigit).ToArray());
+
+    private static string NormalizeCat(string? s) =>
+        (s ?? "").ToUpperInvariant().Replace(" ", "").Replace("-", "");
 }

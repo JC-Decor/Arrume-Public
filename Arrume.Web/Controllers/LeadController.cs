@@ -97,26 +97,26 @@ public class LeadController : Controller
 
         var categorias = _cfg.GetSection("AzureSql:CategoriaClienteIds").Get<string[]>() ?? Array.Empty<string>();
 
-        _logger.LogInformation("Buscando fornecedores: Cidade={Cidade}, CEP={Cep}, Limite={Limite}",
-            lead.Cidade, lead.Cep, _limit);
+        _logger.LogInformation("Buscando fornecedores: Cidade={Cidade}, UF={Uf}, CEP={Cep}, Limite={Limite}",
+            lead.Cidade, lead.Uf, lead.Cep, _limit);
 
         List<Capoteiro> forns = new();
         try
         {
             if (!string.IsNullOrWhiteSpace(lead.Cep) && lead.Cep.Length == 8)
             {
-                forns = await _capoteiro.BuscarAsync(lead.Cidade, lead.Cep, _limit, categorias);
+                forns = await _capoteiro.BuscarAsync(lead.Cidade, lead.Cep, lead.Uf, _limit, categorias);
             }
 
             if ((forns == null || forns.Count == 0))
             {
                 var bairro = lead.Bairro ?? string.Empty;
-                forns = await _capoteiro.BuscarAsync(lead.Cidade, bairro, _limit, categorias);
+                forns = await _capoteiro.BuscarAsync(lead.Cidade, bairro, lead.Uf, _limit, categorias);
             }
 
             if ((forns == null || forns.Count == 0))
             {
-                forns = await _capoteiro.BuscarAsync(lead.Cidade, string.Empty, _limit, categorias);
+                forns = await _capoteiro.BuscarAsync(lead.Cidade, string.Empty, lead.Uf, _limit, categorias);
             }
 
             _logger.LogInformation("Fornecedores encontrados: {Qtde}", forns?.Count ?? 0);
@@ -288,5 +288,24 @@ public class LeadController : Controller
             _logger.LogDebug(ex, "BrasilAPI server-side falhou");
             return false;
         }
+    }
+
+    private void ReadAndApplyCheckbox(string key, Action<bool> apply)
+    {
+        var values = Request.Form[key];
+        var isTrue = values.Any(v =>
+        {
+            var t = (v ?? "").Trim().ToLowerInvariant();
+            return t is "true" or "on" or "true,false" or "false,true";
+        });
+        apply(isTrue);
+    }
+
+    private string GetIp()
+    {
+        var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        return string.IsNullOrWhiteSpace(ip)
+            ? HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"
+            : ip;
     }
 }

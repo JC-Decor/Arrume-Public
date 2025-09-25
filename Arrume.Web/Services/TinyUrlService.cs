@@ -19,7 +19,7 @@ public class TinyUrlService : ILinkShortenerService
     {
         try
         {
-            // Método simples sem API key
+
             var response = await _httpClient.GetAsync($"create?url={Uri.EscapeDataString(longUrl)}");
             
             if (response.IsSuccessStatusCode)
@@ -33,7 +33,7 @@ public class TinyUrlService : ILinkShortenerService
                 }
             }
 
-            // Fallback para outro serviço
+
             return await ShortenWithIsGdAsync(longUrl);
         }
         catch (Exception ex)
