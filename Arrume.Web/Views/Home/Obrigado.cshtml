@@ -2,6 +2,7 @@
     ViewData["Title"] = "Obrigado";
     Layout = "_Layout";
 }
+
 <section class="thanks">
     <div class="container">
         <div class="card center thanks__card">
@@ -12,3 +13,20 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+<script>
+  // GA4: evento de conversão (lead gerado)
+  if (window.gtag) {
+    gtag('event', 'generate_lead', {
+      value: 1
+      // parâmetros adicionais opcionais (currency, campaign etc.)
+    });
+  }
+
+  // Meta Pixel: evento de Lead
+  if (window.fbq) {
+    fbq('track', 'Lead');
+  }
+</script>
+}
