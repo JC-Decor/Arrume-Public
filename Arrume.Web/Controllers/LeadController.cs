@@ -105,6 +105,7 @@ public class LeadController : Controller
         {
             if (!string.IsNullOrWhiteSpace(lead.Cep) && lead.Cep.Length == 8)
             {
+                // OBS: método do provider com UF
                 forns = await _capoteiro.BuscarAsync(lead.Cidade, lead.Cep, lead.Uf, _limit, categorias);
             }
 
@@ -143,6 +144,7 @@ public class LeadController : Controller
 
         return RedirectToAction("Obrigado", "Home");
     }
+
 
     private void ReadAndApplyCheckbox(string key, Action<bool> apply)
     {
@@ -288,24 +290,5 @@ public class LeadController : Controller
             _logger.LogDebug(ex, "BrasilAPI server-side falhou");
             return false;
         }
-    }
-
-    private void ReadAndApplyCheckbox(string key, Action<bool> apply)
-    {
-        var values = Request.Form[key];
-        var isTrue = values.Any(v =>
-        {
-            var t = (v ?? "").Trim().ToLowerInvariant();
-            return t is "true" or "on" or "true,false" or "false,true";
-        });
-        apply(isTrue);
-    }
-
-    private string GetIp()
-    {
-        var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        return string.IsNullOrWhiteSpace(ip)
-            ? HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"
-            : ip;
     }
 }
