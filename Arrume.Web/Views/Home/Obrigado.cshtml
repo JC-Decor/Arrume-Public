@@ -16,13 +16,18 @@
 
 @section Scripts {
 <script>
-  // GA4: conversão (lead gerado) ao carregar a página Obrigado
-  if (window.gtag) {
-    gtag('event', 'generate_lead', {
-      value: 1
-      // Ex.: currency: 'BRL', campaign: 'arrume_form' (opcional)
-    });
-  }
+  // Garante que o dataLayer exista
+  window.dataLayer = window.dataLayer || [];
+
+  // Dispara evento de conversão para o GTM (capturado via Trigger de Custom Event)
+  dataLayer.push({
+    event: 'generate_lead',
+    value: 1
+    // Você pode adicionar dados extras se quiser mapear no GTM/GA4:
+    // currency: 'BRL',
+    // page_type: 'obrigado',
+    // origem_form: 'arrume_form'
+  });
 
   // Meta Pixel: Lead
   if (window.fbq) {

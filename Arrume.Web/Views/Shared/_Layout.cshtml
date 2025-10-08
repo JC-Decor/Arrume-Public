@@ -11,14 +11,16 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="icon" href="~/favicon.ico" />
 
-    <!-- Google tag (gtag.js) - NOVA (G-D0KMRQ44KD) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D0KMRQ44KD"></script>
+    <!-- Google Tag Manager (HEAD) -->
+    <!-- Substitui o gtag.js direto. TODO o GA4 será configurado dentro do GTM -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){ dataLayer.push(arguments); }
-      gtag('js', new Date());
-      gtag('config', 'G-D0KMRQ44KD');
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-KQC58ZGW');
     </script>
+    <!-- End Google Tag Manager (HEAD) -->
 
     <!-- Meta Pixel Code (mantido) -->
     <script>
@@ -34,6 +36,13 @@
     <!-- End Meta Pixel Code -->
 </head>
 <body>
+    <!-- Google Tag Manager (noscript) - deve ficar imediatamente após <body> -->
+    <noscript>
+      <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KQC58ZGW"
+              height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
     <!-- Meta Pixel noscript -->
     <noscript>
       <img height="1" width="1" style="display:none"
