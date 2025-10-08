@@ -65,9 +65,10 @@ app.Use(async (ctx, next) =>
     ctx.Response.Headers["Content-Security-Policy"] =
     "default-src 'self'; " +
     "img-src 'self' data: https:; " +
-    "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com; " +
+    "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net; " +
     "style-src 'self' 'unsafe-inline'; " +
-    "connect-src 'self' https://viacep.com.br https://viacep.com https://api.tinyurl.com https://is.gd; " +
+    "connect-src 'self' https://viacep.com.br https://viacep.com https://api.tinyurl.com https://is.gd https://www.google-analytics.com https://analytics.google.com https://www.facebook.com; " +
+    "frame-src https://www.googletagmanager.com https://www.facebook.com; " +
     "frame-ancestors 'none';";
     await next();
 });
