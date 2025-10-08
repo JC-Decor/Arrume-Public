@@ -67,7 +67,7 @@ app.Use(async (ctx, next) =>
     "img-src 'self' data: https:; " +
     "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net; " +
     "style-src 'self' 'unsafe-inline'; " +
-    "connect-src 'self' https://viacep.com.br https://viacep.com https://api.tinyurl.com https://is.gd https://www.google-analytics.com https://analytics.google.com https://www.facebook.com; " +
+    "connect-src 'self' https://viacep.com.br https://viacep.com https://api.tinyurl.com https://is.gd https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.facebook.com; " +
     "frame-src https://www.googletagmanager.com https://www.facebook.com; " +
     "frame-ancestors 'none';";
     await next();
