@@ -1,5 +1,6 @@
 ﻿@{
     var title = ViewData["Title"] as string ?? "ARRUME";
+    var cspNonce = Context.Items["CspNonce"] as string ?? "";
 }
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -12,8 +13,7 @@
     <link rel="icon" href="~/favicon.ico" />
 
     <!-- Google Tag Manager (HEAD) -->
-    <!-- Substitui o gtag.js direto. TODO o GA4 será configurado dentro do GTM -->
-    <script>
+    <script nonce="@cspNonce">
       (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
       new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
       j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -22,8 +22,8 @@
     </script>
     <!-- End Google Tag Manager (HEAD) -->
 
-    <!-- Meta Pixel Code (mantido) -->
-    <script>
+    <!-- Meta Pixel Code -->
+    <script nonce="@cspNonce">
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
       n.callMethod ? n.callMethod.apply(n,arguments) : n.queue.push(arguments);
     }; if(!f._fbq)f._fbq=n; n.push=n; n.loaded=!0; n.version='2.0';
@@ -36,7 +36,7 @@
     <!-- End Meta Pixel Code -->
 </head>
 <body>
-    <!-- Google Tag Manager (noscript) - deve ficar imediatamente após <body> -->
+    <!-- Google Tag Manager (noscript) -->
     <noscript>
       <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KQC58ZGW"
               height="0" width="0" style="display:none;visibility:hidden"></iframe>
@@ -76,13 +76,13 @@
         </div>
     </footer>
 
-    <!-- Scripts globais -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/localization/messages_pt_BR.min.js" crossorigin="anonymous"></script>
+    <!-- Scripts globais (AGORA COM nonce) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous" nonce="@cspNonce"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js" crossorigin="anonymous" nonce="@cspNonce"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js" crossorigin="anonymous" nonce="@cspNonce"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/localization/messages_pt_BR.min.js" crossorigin="anonymous" nonce="@cspNonce"></script>
 
-    <script src="~/js/form-lead.js" asp-append-version="true"></script>
+    <script src="~/js/form-lead.js" asp-append-version="true" nonce="@cspNonce"></script>
 
     @RenderSection("Scripts", required: false)
 </body>

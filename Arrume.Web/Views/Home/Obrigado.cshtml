@@ -1,6 +1,7 @@
 @{
     ViewData["Title"] = "Obrigado";
     Layout = "_Layout";
+    var cspNonce = Context.Items["CspNonce"] as string ?? "";
 }
 
 <section class="thanks">
@@ -15,21 +16,16 @@
 </section>
 
 @section Scripts {
-<script>
-  // Garante que o dataLayer exista
+<script nonce="@cspNonce">
   window.dataLayer = window.dataLayer || [];
-
-  // Dispara evento de conversão para o GTM (capturado via Trigger de Custom Event)
-  dataLayer.push({
+  window.dataLayer.push({
     event: 'generate_lead',
     value: 1
-    // Você pode adicionar dados extras se quiser mapear no GTM/GA4:
     // currency: 'BRL',
     // page_type: 'obrigado',
     // origem_form: 'arrume_form'
   });
 
-  // Meta Pixel: Lead
   if (window.fbq) {
     fbq('track', 'Lead');
   }
