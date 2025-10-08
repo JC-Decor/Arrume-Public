@@ -16,15 +16,15 @@
 
 @section Scripts {
 <script>
-  // GA4: evento de conversão (lead gerado)
+  // GA4: conversão (lead gerado) ao carregar a página Obrigado
   if (window.gtag) {
     gtag('event', 'generate_lead', {
       value: 1
-      // parâmetros adicionais opcionais (currency, campaign etc.)
+      // Ex.: currency: 'BRL', campaign: 'arrume_form' (opcional)
     });
   }
 
-  // Meta Pixel: evento de Lead
+  // Meta Pixel: Lead
   if (window.fbq) {
     fbq('track', 'Lead');
   }

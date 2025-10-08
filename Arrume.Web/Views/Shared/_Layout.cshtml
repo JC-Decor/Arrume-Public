@@ -1,5 +1,4 @@
 ﻿@{
-    Layout = null;
     var title = ViewData["Title"] as string ?? "ARRUME";
 }
 <!DOCTYPE html>
@@ -12,16 +11,16 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="icon" href="~/favicon.ico" />
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0P425382RK"></script>
+    <!-- Google tag (gtag.js) - NOVA (G-D0KMRQ44KD) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D0KMRQ44KD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){ dataLayer.push(arguments); }
       gtag('js', new Date());
-      gtag('config', 'G-0P425382RK');
+      gtag('config', 'G-D0KMRQ44KD');
     </script>
 
-    <!-- Meta Pixel Code -->
+    <!-- Meta Pixel Code (mantido) -->
     <script>
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
       n.callMethod ? n.callMethod.apply(n,arguments) : n.queue.push(arguments);
@@ -35,7 +34,7 @@
     <!-- End Meta Pixel Code -->
 </head>
 <body>
-    <!-- Meta Pixel noscript (deve ficar dentro do body) -->
+    <!-- Meta Pixel noscript -->
     <noscript>
       <img height="1" width="1" style="display:none"
            src="https://www.facebook.com/tr?id=2305246329524360&ev=PageView&noscript=1" />
@@ -68,12 +67,14 @@
         </div>
     </footer>
 
+    <!-- Scripts globais -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/localization/messages_pt_BR.min.js" crossorigin="anonymous"></script>
 
     <script src="~/js/form-lead.js" asp-append-version="true"></script>
+
     @RenderSection("Scripts", required: false)
 </body>
 </html>
