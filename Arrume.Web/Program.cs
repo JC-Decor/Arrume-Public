@@ -56,19 +56,57 @@ else
 
 var app = builder.Build();
 
+// 🔒 Security headers + CSP com NONCE por requisição
 app.Use(async (ctx, next) =>
 {
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
     ctx.Response.Headers["X-Frame-Options"] = "DENY";
     ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     ctx.Response.Headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
-    ctx.Response.Headers["Content-Security-Policy"] =
+
+    // Gera nonce (base64) e disponibiliza para as Views Razor
+    var nonceBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+    var nonce = Convert.ToBase64String(nonceBytes);
+    ctx.Items["CspNonce"] = nonce;
+
+    // CSP: SEM 'unsafe-inline'; com 'strict-dynamic' + nonce.
+    // Importante: adicionamos script-src-elem/script-src-attr para evitar fallback warnings.
+   // CSP: SEM 'unsafe-inline'; com 'strict-dynamic' + nonce.
+var csp =
     "default-src 'self'; " +
-    "img-src 'self' data: https:; " +
-    "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com; " +
+    // scripts
+    $"script-src 'self' 'nonce-{nonce}' 'strict-dynamic' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://code.jquery.com https://cdnjs.cloudflare.com; " +
+    $"script-src-elem 'self' 'nonce-{nonce}' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://code.jquery.com https://cdnjs.cloudflare.com; " +
+    $"script-src-attr 'self' 'nonce-{nonce}'; " +
+    // conexões XHR/fetch
+    "connect-src 'self' " +
+      "https://www.google-analytics.com " +
+      "https://region1.google-analytics.com " +
+      "https://analytics.google.com " +                      // ✅ ADICIONADO (GA4 /g/collect)
+      "https://region1.analytics.google.com " +              // ✅ ADICIONADO
+      "https://stats.g.doubleclick.net " +
+      "https://tagassistant.google.com " +
+      "https://viacep.com.br https://viacep.com " +
+      "https://api.tinyurl.com https://is.gd; " +
+    // imagens
+    "img-src 'self' data: " +
+      "https://www.google-analytics.com " +
+      "https://www.facebook.com " +
+      "https://www.googletagmanager.com " +
+      "https://www.google.com " +                            // ✅ ADICIONADO (ga-audiences)
+      "https://www.google.com.br " +                         // ✅ ADICIONADO
+      "https://stats.g.doubleclick.net; " +                  // ✅ ADICIONADO (beacons)
+    // estilos
     "style-src 'self' 'unsafe-inline'; " +
-    "connect-src 'self' https://viacep.com.br https://viacep.com https://api.tinyurl.com https://is.gd; " +
+    // iframes
+    "frame-src https://www.googletagmanager.com; " +
+    "child-src https://www.googletagmanager.com; " +
+    "base-uri 'self'; " +
     "frame-ancestors 'none';";
+
+ctx.Response.Headers["Content-Security-Policy"] = csp;
+
+
     await next();
 });
 
